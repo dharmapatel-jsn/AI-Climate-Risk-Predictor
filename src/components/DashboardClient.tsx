@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import type { AlertRecord, RiskApiResponse, ZoneRisk } from "@/types/climate";
+import type { AlertRecord, RegionHighlight, RiskApiResponse, ZoneRisk } from "@/types/climate";
+import { loadRiskSnapshot } from "@/lib/risk-engine";
 
 const RiskMap = dynamic(() => import("@/components/RiskMap"), { ssr: false });
 
@@ -23,7 +24,9 @@ function scoreClass(score: number): string {
 export default function DashboardClient() {
   const [coords, setCoords] = useState({ lat: 20.5937, lon: 78.9629 });
   const [focusZone, setFocusZone] = useState<ZoneRisk | null>(null);
+  const [selectedZone, setSelectedZone] = useState<ZoneRisk | null>(null);
   const [zones, setZones] = useState<ZoneRisk[]>([]);
+  const [featuredRegions, setFeaturedRegions] = useState<RegionHighlight[]>([]);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [zoneQuery, setZoneQuery] = useState("");
   const [zoneKind, setZoneKind] = useState<"all" | "capital" | "major-city">("all");
@@ -33,28 +36,36 @@ export default function DashboardClient() {
   const pageSize = 12;
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
       setError(null);
+      setFocusZone(null);
+      setSelectedZone(null);
 
       try {
-        const riskRes = await fetch(`/api/risk?lat=${coords.lat}&lon=${coords.lon}`, { cache: "no-store" });
-        if (!riskRes.ok) throw new Error("Risk API failed");
-        const riskData = (await riskRes.json()) as RiskApiResponse;
-        setZones(riskData.zones);
+        const riskData = await loadRiskSnapshot(coords.lat, coords.lon, 400);
 
-        const alertsRes = await fetch("/api/alerts", { cache: "no-store" });
-        if (!alertsRes.ok) throw new Error("Alerts API failed");
-        const alertsData = (await alertsRes.json()) as { alerts: AlertRecord[] };
-        setAlerts(alertsData.alerts);
+        if (cancelled) return;
+
+        setZones(riskData.zones);
+        setFeaturedRegions(riskData.featuredRegions ?? []);
+        setAlerts(riskData.alerts);
       } catch (e) {
+        if (cancelled) return;
         setError(e instanceof Error ? e.message : "Unexpected error");
       } finally {
+        if (cancelled) return;
         setLoading(false);
       }
     }
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [coords.lat, coords.lon]);
 
   const topRisk = useMemo(() => zones[0], [zones]);
@@ -101,9 +112,32 @@ export default function DashboardClient() {
         </div>
       </section>
 
+      <section className="grid gap-4 md:grid-cols-3">
+        {featuredRegions.map((region) => (
+          <button
+            key={region.label}
+            type="button"
+            onClick={() => {
+              setSelectedZone(region.featuredZone);
+              setFocusZone(region.featuredZone);
+              setCoords({ lat: region.featuredZone.lat, lon: region.featuredZone.lon });
+            }}
+            className="rounded-3xl border border-white/10 bg-white/5 p-4 text-left transition hover:border-cyan-300/50 hover:bg-white/10"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] text-cyan-200/80">Region highlight</p>
+            <h2 className="mt-2 text-lg font-semibold text-white">{region.label}</h2>
+            <p className="mt-1 text-sm text-slate-300">{region.featuredZone.name}</p>
+            <p className="mt-3 text-2xl font-bold text-white">{(region.featuredZone.overallScore * 100).toFixed(0)}%</p>
+            <p className="mt-1 text-xs text-slate-400">
+              {region.zonesCovered} zones across {region.countriesCovered} countries
+            </p>
+          </button>
+        ))}
+      </section>
+
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-3xl border border-white/10 bg-black/25 p-3 shadow-2xl shadow-cyan-950/30">
-          <RiskMap zones={zones} center={mapCenter} zoom={mapZoom} />
+          <RiskMap zones={zones} center={mapCenter} zoom={mapZoom} autoFitBounds={!focusZone} />
         </div>
 
         <aside className="space-y-4">
@@ -137,6 +171,81 @@ export default function DashboardClient() {
               ))}
               {!alerts.length && <p className="text-xs text-slate-300">No high-risk alerts yet.</p>}
             </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-sm font-medium text-white">Selected Zone</p>
+              {selectedZone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedZone(null);
+                    setFocusZone(null);
+                  }}
+                  className="rounded-md border border-white/10 px-2.5 py-1 text-[11px] text-white transition hover:border-white/30"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {selectedZone ? (
+              <div className="mt-3 space-y-3 text-sm text-slate-200">
+                <div>
+                  <p className="text-lg font-semibold text-white">{selectedZone.name}</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-cyan-200/80">
+                    {selectedZone.zoneKind === "capital" ? "Capital" : selectedZone.zoneKind === "major-city" ? "Major city" : "Zone"} · {selectedZone.countryCode}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
+                  <div className="rounded-lg border border-white/10 bg-slate-950/40 p-2">
+                    <span className="block text-slate-400">Population</span>
+                    <span className="text-white">{selectedZone.populationEstimate.toLocaleString()}</span>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-slate-950/40 p-2">
+                    <span className="block text-slate-400">Risk level</span>
+                    <span className="text-white capitalize">{selectedZone.riskLevel}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 text-xs">
+                  <div className="rounded-lg border border-white/10 bg-slate-950/40 p-2">
+                    Flood risk: <span className="text-white">{(selectedZone.risks.flood * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-slate-950/40 p-2">
+                    Heat risk: <span className="text-white">{(selectedZone.risks.heatwave * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-slate-950/40 p-2">
+                    Air risk: <span className="text-white">{(selectedZone.risks.airQuality * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Why this zone matters</p>
+                  <ul className="mt-2 space-y-1 text-xs text-slate-300">
+                    {selectedZone.rationale.map((line) => (
+                      <li key={line} className="rounded-md border border-white/10 bg-slate-950/30 px-2 py-1">
+                        {line}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setFocusZone(selectedZone)}
+                  className="w-full rounded-lg border border-cyan-300/20 bg-cyan-400/10 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-400/20"
+                >
+                  Focus map on this zone
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-300">
+                Choose a row in the table to inspect a city or capital in detail.
+              </p>
+            )}
           </div>
         </aside>
       </section>
@@ -235,8 +344,16 @@ export default function DashboardClient() {
                   <td className="py-2 text-right">
                     <button
                       type="button"
+                      onClick={() => setSelectedZone(zone)}
+                      className="mr-2 rounded-md border border-white/10 px-3 py-1.5 text-xs text-white transition hover:border-white/30"
+                    >
+                      Details
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setFocusZone(zone);
+                        setSelectedZone(zone);
                         setCoords({ lat: zone.lat, lon: zone.lon });
                       }}
                       className="rounded-md border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-400/20"

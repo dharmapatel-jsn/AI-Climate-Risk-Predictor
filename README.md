@@ -40,6 +40,14 @@ npm run dev
 
 Open http://localhost:3000
 
+## GitHub Pages
+
+This app is configured as a static export so it can be deployed to GitHub Pages.
+
+- The build outputs to `out/`
+- The Pages workflow lives in `.github/workflows/deploy-pages.yml`
+- If you deploy under a project repo, the workflow sets the base path automatically from the repository name
+
 ## Environment
 
 Copy `.env.example` to `.env.local` and set values as needed.
@@ -54,11 +62,8 @@ Available keys:
 
 ## API Surface
 
-- `GET /api/risk?lat=<number>&lon=<number>`
-  - Scores every configured zone against current conditions
-  - Generates alert records when thresholds are crossed
-- `GET /api/alerts`
-  - Returns latest alert entries from local store
+- The dashboard computes risk data in the browser and fetches weather directly from Open-Meteo.
+- Alert cards are generated client-side and are not persisted on static hosting.
 
 ## Global Coverage Data
 

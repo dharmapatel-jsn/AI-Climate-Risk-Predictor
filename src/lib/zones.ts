@@ -1,7 +1,6 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
+import seedZones from "../../data/mock-zones.json";
 
-interface SeedZone {
+export interface SeedZone {
   id: string;
   name: string;
   lat: number;
@@ -17,9 +16,7 @@ export interface PrioritizedZone extends SeedZone {
 }
 
 export async function getSeedZones(): Promise<SeedZone[]> {
-  const filePath = path.join(process.cwd(), "data", "mock-zones.json");
-  const content = await readFile(filePath, "utf8");
-  return JSON.parse(content) as SeedZone[];
+  return seedZones as SeedZone[];
 }
 
 export function distanceKm(aLat: number, aLon: number, bLat: number, bLon: number): number {

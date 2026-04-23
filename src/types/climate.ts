@@ -21,6 +21,13 @@ export interface ZoneRisk {
   rationale: string[];
 }
 
+export interface RegionHighlight {
+  label: "North America" | "South America" | "Australia";
+  featuredZone: ZoneRisk;
+  zonesCovered: number;
+  countriesCovered: number;
+}
+
 export interface WeatherSnapshot {
   temperature2m: number;
   precipitation: number;
@@ -37,6 +44,7 @@ export interface RiskApiResponse {
   };
   generatedAt: string;
   zones: ZoneRisk[];
+  featuredRegions: RegionHighlight[];
 }
 
 export interface AlertRecord {

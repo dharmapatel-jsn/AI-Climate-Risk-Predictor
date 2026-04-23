@@ -18,7 +18,7 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
   });
 
   try {
-    const response = await fetch(`${OPEN_METEO_URL}?${query.toString()}`, { next: { revalidate: 1800 } });
+    const response = await fetch(`${OPEN_METEO_URL}?${query.toString()}`);
     if (!response.ok) throw new Error(`Open-Meteo error: ${response.status}`);
 
     const data = await response.json();
