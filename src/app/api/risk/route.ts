@@ -7,7 +7,7 @@ import {
   riskLevelFromScore,
 } from "@/lib/risk-utils";
 import { getWeatherSnapshot } from "@/lib/weather";
-import { distanceKm, getSeedZones } from "@/lib/zones";
+import { getSeedZones, selectRelevantZones } from "@/lib/zones";
 import { RiskApiResponse } from "@/types/climate";
 
 const threshold = {
@@ -22,20 +22,22 @@ export async function GET(request: NextRequest): Promise<NextResponse<RiskApiRes
   const { searchParams } = new URL(request.url);
   const lat = Number(searchParams.get("lat") ?? "20.5937");
   const lon = Number(searchParams.get("lon") ?? "78.9629");
+  const requestedMax = Number(searchParams.get("maxZones") ?? "220");
+  const maxZones = Number.isFinite(requestedMax) ? Math.max(50, Math.min(400, Math.floor(requestedMax))) : 220;
 
   if (!withinRange(lat, -90, 90) || !withinRange(lon, -180, 180)) {
     return NextResponse.json({ error: "Invalid coordinates" }, { status: 400 });
   }
 
   const seedZones = await getSeedZones();
+  const selectedZones = selectRelevantZones(seedZones, lat, lon, maxZones);
 
   const zones = await Promise.all(
-    seedZones.map(async (zone) => {
+    selectedZones.map(async (zone) => {
       const weather = await getWeatherSnapshot(zone.lat, zone.lon);
       const base = computeRiskBreakdown(weather);
 
-      const proximity = distanceKm(lat, lon, zone.lat, zone.lon);
-      const locationBoost = Math.max(0, 1 - proximity / 1800) * 0.12;
+      const locationBoost = Math.max(0, 1 - zone.distanceKm / 1800) * 0.12;
 
       const risks = {
         flood: Math.min(1, base.flood + locationBoost),
@@ -101,5 +103,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<RiskApiRes
 
   const response = NextResponse.json(payload);
   response.headers.set("x-generated-alerts", String(generatedAlerts.length));
+  response.headers.set("x-scored-zones", String(selectedZones.length));
+  response.headers.set("x-total-zones", String(seedZones.length));
   return response;
 }

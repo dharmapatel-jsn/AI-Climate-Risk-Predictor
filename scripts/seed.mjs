@@ -32,7 +32,7 @@ async function fetchCapitalsWithRetry() {
       const response = await fetch(CAPITALS_API);
       if (!response.ok) throw new Error(`status ${response.status}`);
       return await response.json();
-    } catch (error) {
+    } catch {
       if (attempt === 3) return null;
       await sleep(600 * attempt);
     }
