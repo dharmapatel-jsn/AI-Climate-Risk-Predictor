@@ -24,8 +24,12 @@ export default function DashboardClient() {
   const [coords, setCoords] = useState({ lat: 20.5937, lon: 78.9629 });
   const [zones, setZones] = useState<ZoneRisk[]>([]);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
+  const [zoneQuery, setZoneQuery] = useState("");
+  const [zoneKind, setZoneKind] = useState<"all" | "capital" | "major-city">("all");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const pageSize = 12;
 
   useEffect(() => {
     async function load() {
@@ -53,6 +57,26 @@ export default function DashboardClient() {
   }, [coords.lat, coords.lon]);
 
   const topRisk = useMemo(() => zones[0], [zones]);
+  const filteredZones = useMemo(() => {
+    const query = zoneQuery.trim().toLowerCase();
+
+    return zones.filter((zone) => {
+      const matchesQuery =
+        !query ||
+        zone.name.toLowerCase().includes(query) ||
+        zone.countryCode.toLowerCase().includes(query);
+      const matchesKind = zoneKind === "all" || zone.zoneKind === zoneKind;
+
+      return matchesQuery && matchesKind;
+    });
+  }, [zoneKind, zoneQuery, zones]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredZones.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const visibleZones = useMemo(() => {
+    const startIndex = (safePage - 1) * pageSize;
+    return filteredZones.slice(startIndex, startIndex + pageSize);
+  }, [filteredZones, safePage]);
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
@@ -116,10 +140,71 @@ export default function DashboardClient() {
         {loading && <p className="mt-2 text-sm text-slate-300">Refreshing predictions...</p>}
         {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
         <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
+          <div className="mb-4 grid gap-3 md:grid-cols-[1.5fr_0.7fr_0.6fr]">
+            <label className="flex flex-col gap-1 text-xs text-slate-300">
+              Search zone or country
+              <input
+                value={zoneQuery}
+                onChange={(event) => {
+                  setZoneQuery(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Delhi, BR, Lagos..."
+                className="rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none ring-0 placeholder:text-slate-500 focus:border-cyan-300/70"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-slate-300">
+              Zone type
+              <select
+                value={zoneKind}
+                onChange={(event) => {
+                  setZoneKind(event.target.value as typeof zoneKind);
+                  setPage(1);
+                }}
+                className="rounded-lg border border-white/10 bg-slate-950/40 px-3 py-2 text-sm text-white outline-none focus:border-cyan-300/70"
+              >
+                <option value="all">All</option>
+                <option value="capital">Capitals</option>
+                <option value="major-city">Major cities</option>
+              </select>
+            </label>
+            <div className="flex items-end justify-between gap-2 text-xs text-slate-300 md:justify-end">
+              <div>
+                {filteredZones.length > 0 ? (
+                  <>
+                    Showing <span className="text-white">{(safePage - 1) * pageSize + 1}-{Math.min(filteredZones.length, safePage * pageSize)}</span> of <span className="text-white">{filteredZones.length}</span>
+                  </>
+                ) : (
+                  <>
+                    Showing <span className="text-white">0</span> of <span className="text-white">0</span>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                  disabled={safePage === 1}
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                  disabled={safePage === totalPages}
+                  className="rounded-md border border-white/10 px-3 py-1.5 text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+          <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="text-left text-slate-300">
                 <th className="pb-2">Zone</th>
+                <th className="pb-2">Type</th>
                 <th className="pb-2">Flood</th>
                 <th className="pb-2">Heat</th>
                 <th className="pb-2">Air</th>
@@ -127,9 +212,15 @@ export default function DashboardClient() {
               </tr>
             </thead>
             <tbody>
-              {zones.map((zone) => (
+              {visibleZones.map((zone) => (
                 <tr key={zone.id} className="border-t border-white/10 text-slate-100">
-                  <td className="py-2">{zone.name}</td>
+                  <td className="py-2">
+                    <div className="font-medium text-white">{zone.name}</div>
+                    <div className="text-xs text-slate-400">{zone.countryCode} · {zone.populationEstimate.toLocaleString()}</div>
+                  </td>
+                  <td className="py-2 text-xs uppercase tracking-[0.16em] text-cyan-200/80">
+                    {zone.zoneKind === "capital" ? "Capital" : zone.zoneKind === "major-city" ? "Major city" : "Zone"}
+                  </td>
                   <td>{(zone.risks.flood * 100).toFixed(0)}%</td>
                   <td>{(zone.risks.heatwave * 100).toFixed(0)}%</td>
                   <td>{(zone.risks.airQuality * 100).toFixed(0)}%</td>
@@ -138,6 +229,12 @@ export default function DashboardClient() {
               ))}
             </tbody>
           </table>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300">
+            <p>
+              Page <span className="text-white">{safePage}</span> of <span className="text-white">{totalPages}</span>
+            </p>
+            {!visibleZones.length && <p className="text-sm text-slate-300">No zones match the current filter.</p>}
+          </div>
         </div>
       </section>
     </div>

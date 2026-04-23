@@ -14,6 +14,7 @@ export interface ZoneRisk {
   radiusKm: number;
   countryCode: string;
   populationEstimate: number;
+  zoneKind?: "capital" | "major-city";
   risks: RiskBreakdown;
   overallScore: number;
   riskLevel: RiskLevel;
