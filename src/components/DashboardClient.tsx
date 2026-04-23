@@ -22,6 +22,7 @@ function scoreClass(score: number): string {
 
 export default function DashboardClient() {
   const [coords, setCoords] = useState({ lat: 20.5937, lon: 78.9629 });
+  const [focusZone, setFocusZone] = useState<ZoneRisk | null>(null);
   const [zones, setZones] = useState<ZoneRisk[]>([]);
   const [alerts, setAlerts] = useState<AlertRecord[]>([]);
   const [zoneQuery, setZoneQuery] = useState("");
@@ -57,6 +58,8 @@ export default function DashboardClient() {
   }, [coords.lat, coords.lon]);
 
   const topRisk = useMemo(() => zones[0], [zones]);
+  const mapCenter: [number, number] = focusZone ? [focusZone.lat, focusZone.lon] : [coords.lat, coords.lon];
+  const mapZoom = focusZone ? 7 : 4;
   const filteredZones = useMemo(() => {
     const query = zoneQuery.trim().toLowerCase();
 
@@ -100,7 +103,7 @@ export default function DashboardClient() {
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-3xl border border-white/10 bg-black/25 p-3 shadow-2xl shadow-cyan-950/30">
-          <RiskMap zones={zones} center={[coords.lat, coords.lon]} />
+          <RiskMap zones={zones} center={mapCenter} zoom={mapZoom} />
         </div>
 
         <aside className="space-y-4">
@@ -112,7 +115,10 @@ export default function DashboardClient() {
                   key={preset.label}
                   type="button"
                   className="rounded-lg border border-white/15 bg-slate-900/40 px-3 py-2 text-left text-sm text-slate-100 transition hover:border-cyan-300/80"
-                  onClick={() => setCoords({ lat: preset.lat, lon: preset.lon })}
+                  onClick={() => {
+                    setFocusZone(null);
+                    setCoords({ lat: preset.lat, lon: preset.lon });
+                  }}
                 >
                   {preset.label}
                 </button>
@@ -209,6 +215,7 @@ export default function DashboardClient() {
                 <th className="pb-2">Heat</th>
                 <th className="pb-2">Air</th>
                 <th className="pb-2">Overall</th>
+                <th className="pb-2 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -225,6 +232,18 @@ export default function DashboardClient() {
                   <td>{(zone.risks.heatwave * 100).toFixed(0)}%</td>
                   <td>{(zone.risks.airQuality * 100).toFixed(0)}%</td>
                   <td className={scoreClass(zone.overallScore)}>{(zone.overallScore * 100).toFixed(0)}%</td>
+                  <td className="py-2 text-right">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusZone(zone);
+                        setCoords({ lat: zone.lat, lon: zone.lon });
+                      }}
+                      className="rounded-md border border-cyan-300/25 bg-cyan-400/10 px-3 py-1.5 text-xs font-medium text-cyan-100 transition hover:border-cyan-300/70 hover:bg-cyan-400/20"
+                    >
+                      Focus map
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -233,6 +252,15 @@ export default function DashboardClient() {
             <p>
               Page <span className="text-white">{safePage}</span> of <span className="text-white">{totalPages}</span>
             </p>
+            {focusZone && (
+              <button
+                type="button"
+                onClick={() => setFocusZone(null)}
+                className="rounded-md border border-white/10 px-3 py-1.5 text-white transition hover:border-white/30"
+              >
+                Clear map focus
+              </button>
+            )}
             {!visibleZones.length && <p className="text-sm text-slate-300">No zones match the current filter.</p>}
           </div>
         </div>

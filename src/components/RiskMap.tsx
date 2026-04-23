@@ -7,6 +7,7 @@ import type { ZoneRisk } from "@/types/climate";
 interface RiskMapProps {
   zones: ZoneRisk[];
   center: [number, number];
+  zoom?: number;
 }
 
 const colorFromScore = (score: number): string => {
@@ -16,9 +17,9 @@ const colorFromScore = (score: number): string => {
   return "#10b981";
 };
 
-export default function RiskMap({ zones, center }: RiskMapProps) {
+export default function RiskMap({ zones, center, zoom = 4 }: RiskMapProps) {
   return (
-    <MapContainer center={center} zoom={4} scrollWheelZoom className="h-[420px] w-full rounded-2xl border border-white/15">
+    <MapContainer center={center} zoom={zoom} scrollWheelZoom className="h-[420px] w-full rounded-2xl border border-white/15">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
