@@ -1,0 +1,56 @@
+[
+  {
+    "id": "in-delhi",
+    "name": "Delhi NCR",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "radiusKm": 35,
+    "countryCode": "IN",
+    "populationEstimate": 32000000
+  },
+  {
+    "id": "bd-dhaka",
+    "name": "Dhaka Metro",
+    "lat": 23.8103,
+    "lon": 90.4125,
+    "radiusKm": 28,
+    "countryCode": "BD",
+    "populationEstimate": 23000000
+  },
+  {
+    "id": "ng-lagos",
+    "name": "Lagos Coastal Belt",
+    "lat": 6.5244,
+    "lon": 3.3792,
+    "radiusKm": 30,
+    "countryCode": "NG",
+    "populationEstimate": 21000000
+  },
+  {
+    "id": "id-jakarta",
+    "name": "Jakarta Basin",
+    "lat": -6.2088,
+    "lon": 106.8456,
+    "radiusKm": 32,
+    "countryCode": "ID",
+    "populationEstimate": 11000000
+  },
+  {
+    "id": "br-saopaulo",
+    "name": "Sao Paulo Urban Core",
+    "lat": -23.5505,
+    "lon": -46.6333,
+    "radiusKm": 34,
+    "countryCode": "BR",
+    "populationEstimate": 22000000
+  },
+  {
+    "id": "us-miami",
+    "name": "Miami-Dade",
+    "lat": 25.7617,
+    "lon": -80.1918,
+    "radiusKm": 26,
+    "countryCode": "US",
+    "populationEstimate": 6200000
+  }
+]
