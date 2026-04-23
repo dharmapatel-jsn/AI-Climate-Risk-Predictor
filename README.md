@@ -16,7 +16,7 @@ It combines open weather signals, a transparent scoring engine, and map-based ri
 - Risk scoring API using deterministic, explainable formulas
 - Leaflet risk map with zone overlays and color-coded severity
 - Alert pipeline that writes high-risk events to local persistence
-- Seeded geographies for rapid demo and testing
+- Global zone seeding that includes country capitals and major cities worldwide
 
 ## Why This Project Exists
 
@@ -59,6 +59,13 @@ Available keys:
   - Generates alert records when thresholds are crossed
 - `GET /api/alerts`
   - Returns latest alert entries from local store
+
+## Global Coverage Data
+
+- Capitals are fetched for all countries from Rest Countries v3.
+- Major cities are generated from the all-the-cities dataset.
+- Current major-city cutoff is population >= 500,000.
+- All cities above the major-city cutoff are included, alongside country capitals.
 
 ## Scoring Logic (Current Baseline)
 
