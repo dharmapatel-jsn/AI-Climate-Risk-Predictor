@@ -9,6 +9,7 @@ interface SeedZone {
   radiusKm: number;
   countryCode: string;
   populationEstimate: number;
+  zoneKind?: "capital" | "major-city";
 }
 
 export async function getSeedZones(): Promise<SeedZone[]> {
