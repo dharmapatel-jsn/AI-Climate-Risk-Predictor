@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useMemo } from "react";
 import { DivIcon } from "leaflet";
-import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { getCountryName } from "@/lib/countries";
 import type { ZoneRisk } from "@/types/climate";
 
@@ -73,37 +73,42 @@ function BoundsController({ zones, autoFitBounds }: Pick<RiskMapProps, "zones" |
   return null;
 }
 
+function ViewController({ center, zoom, autoFitBounds }: Pick<RiskMapProps, "center" | "zoom" | "autoFitBounds">) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (autoFitBounds) return;
+    map.setView(center, zoom, { animate: true, duration: 0.9 });
+  }, [autoFitBounds, center, map, zoom]);
+
+  return null;
+}
+
 export default function RiskMap({ zones, center, zoom = 4, autoFitBounds = true }: RiskMapProps) {
-  const countryZones = useMemo(() => {
-    const grouped = new Map<string, ZoneRisk>();
-
-    for (const zone of zones) {
-      const current = grouped.get(zone.countryCode);
-      if (!current || zone.overallScore > current.overallScore) {
-        grouped.set(zone.countryCode, zone);
-      }
-    }
-
-    return Array.from(grouped.values());
-  }, [zones]);
+  const cityZones = useMemo(() => zones, [zones]);
 
   return (
     <div className="relative h-[420px] w-full overflow-hidden rounded-2xl border border-white/15 bg-[radial-gradient(circle_at_20%_20%,rgba(34,197,94,0.14),transparent_28%),radial-gradient(circle_at_80%_20%,rgba(14,165,233,0.12),transparent_26%),radial-gradient(circle_at_50%_80%,rgba(59,130,246,0.12),transparent_28%),linear-gradient(180deg,rgba(2,6,23,0.95),rgba(15,23,42,0.92))]">
       <div className="pointer-events-none absolute left-3 top-3 z-[500] rounded-full border border-emerald-300/30 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100">
-        Green tag = strongest country marker
+        City-wise live risk map
       </div>
       <MapContainer center={center} zoom={zoom} scrollWheelZoom className="absolute inset-0 h-full w-full">
-        <BoundsController zones={countryZones} autoFitBounds={autoFitBounds} />
-        {countryZones.map((zone) => (
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+        />
+        <ViewController center={center} zoom={zoom} autoFitBounds={autoFitBounds} />
+        <BoundsController zones={cityZones} autoFitBounds={autoFitBounds} />
+        {cityZones.map((zone) => (
           <Marker
-            key={zone.countryCode}
+            key={zone.id}
             position={[zone.lat, zone.lon]}
-            icon={createTagIcon(getCountryName(zone.countryCode), zone.overallScore)}
+            icon={createTagIcon(zone.name, zone.overallScore)}
           >
             <Popup>
               <div className="text-sm">
-                <p className="font-semibold">{getCountryName(zone.countryCode)}</p>
-                <p>{zone.name}</p>
+                <p className="font-semibold">{zone.name}</p>
+                <p>{getCountryName(zone.countryCode)}</p>
                 <p>Country code: {zone.countryCode}</p>
                 <p>Risk: {(zone.overallScore * 100).toFixed(0)}%</p>
                 <p>Flood: {(zone.risks.flood * 100).toFixed(0)}%</p>

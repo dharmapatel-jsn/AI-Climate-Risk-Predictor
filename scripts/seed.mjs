@@ -7,6 +7,62 @@ const dataDir = path.join(root, "data");
 
 const CAPITALS_API = "https://restcountries.com/v3.1/all?fields=cca2,capital,capitalInfo,population";
 const MAJOR_CITY_POPULATION_THRESHOLD = 500000;
+const TARGETED_MAJOR_CITY_POPULATION_THRESHOLD = 150000;
+
+const EUROPE_COUNTRY_CODES = new Set([
+  "AL",
+  "AD",
+  "AM",
+  "AT",
+  "AZ",
+  "BY",
+  "BE",
+  "BA",
+  "BG",
+  "HR",
+  "CY",
+  "CZ",
+  "DK",
+  "EE",
+  "FI",
+  "FR",
+  "GE",
+  "DE",
+  "GR",
+  "HU",
+  "IS",
+  "IE",
+  "IT",
+  "XK",
+  "LV",
+  "LI",
+  "LT",
+  "LU",
+  "MT",
+  "MD",
+  "MC",
+  "ME",
+  "NL",
+  "MK",
+  "NO",
+  "PL",
+  "PT",
+  "RO",
+  "RU",
+  "SM",
+  "RS",
+  "SK",
+  "SI",
+  "ES",
+  "SE",
+  "CH",
+  "TR",
+  "UA",
+  "GB",
+  "VA",
+]);
+
+const TARGET_COUNTRY_CODES = new Set(["US", "CA", "AU", ...EUROPE_COUNTRY_CODES]);
 
 const slugify = (value) =>
   String(value)
@@ -15,6 +71,11 @@ const slugify = (value) =>
     .replace(/^-+|-+$/g, "");
 
 const inRange = (value, min, max) => Number.isFinite(value) && value >= min && value <= max;
+
+const majorCityThresholdForCountry = (countryCode) =>
+  TARGET_COUNTRY_CODES.has(countryCode)
+    ? TARGETED_MAJOR_CITY_POPULATION_THRESHOLD
+    : MAJOR_CITY_POPULATION_THRESHOLD;
 
 const radiusFromPopulation = (population) => {
   if (population >= 10000000) return 36;
@@ -60,7 +121,7 @@ for (const city of allCities) {
     }
   }
 
-  if (population < MAJOR_CITY_POPULATION_THRESHOLD) continue;
+  if (population < majorCityThresholdForCountry(city.country)) continue;
   if (!String(city.featureCode || "").startsWith("PPL")) continue;
 
   const bucket = citiesByCountry.get(city.country) ?? [];

@@ -1,6 +1,8 @@
 import { WeatherSnapshot } from "@/types/climate";
 
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minute cache
+const weatherCache = new Map<string, { data: WeatherSnapshot; timestamp: number }>();
 
 const toNumber = (value: unknown, fallback: number): number => {
   const n = Number(value);
@@ -8,6 +10,13 @@ const toNumber = (value: unknown, fallback: number): number => {
 };
 
 export async function getWeatherSnapshot(lat: number, lon: number): Promise<WeatherSnapshot> {
+  const cacheKey = `${Math.round(lat * 10)},${Math.round(lon * 10)}`;
+  const cached = weatherCache.get(cacheKey);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
+    return cached.data;
+  }
+
   const query = new URLSearchParams({
     latitude: String(lat),
     longitude: String(lon),
@@ -30,7 +39,7 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
 
     const syntheticPm25 = Math.max(8, Math.min(140, 14 + toNumber(current.temperature_2m, 25) * 0.8));
 
-    return {
+    const snapshot: WeatherSnapshot = {
       temperature2m: toNumber(current.temperature_2m, 29),
       precipitation: toNumber(current.precipitation, 1.5),
       precipitationProbability,
@@ -38,8 +47,11 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
       humidity: toNumber(current.relative_humidity_2m, 58),
       pm25Estimate: syntheticPm25,
     };
+
+    weatherCache.set(cacheKey, { data: snapshot, timestamp: Date.now() });
+    return snapshot;
   } catch {
-    return {
+    const fallback: WeatherSnapshot = {
       temperature2m: 31,
       precipitation: 4,
       precipitationProbability: 45,
@@ -47,5 +59,7 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
       humidity: 62,
       pm25Estimate: 24,
     };
+    weatherCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
+    return fallback;
   }
 }

@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import type { AlertRecord, RegionHighlight, RiskApiResponse, ZoneRisk } from "@/types/climate";
+import type { AlertRecord, RegionHighlight, ZoneRisk } from "@/types/climate";
 import { loadRiskSnapshot } from "@/lib/risk-engine";
 
+const GlobeMap = dynamic(() => import("@/components/GlobeMap"), { ssr: false });
 const RiskMap = dynamic(() => import("@/components/RiskMap"), { ssr: false });
 
 const presets = [
@@ -12,6 +13,10 @@ const presets = [
   { label: "Lagos", lat: 6.5244, lon: 3.3792 },
   { label: "Jakarta", lat: -6.2088, lon: 106.8456 },
   { label: "Sao Paulo", lat: -23.5505, lon: -46.6333 },
+  { label: "New York", lat: 40.7128, lon: -74.006 },
+  { label: "Toronto", lat: 43.6532, lon: -79.3832 },
+  { label: "Sydney", lat: -33.8688, lon: 151.2093 },
+  { label: "London", lat: 51.5074, lon: -0.1278 },
 ];
 
 function scoreClass(score: number): string {
@@ -33,6 +38,7 @@ export default function DashboardClient() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mapMode, setMapMode] = useState<"globe" | "flat">("globe");
   const pageSize = 12;
 
   useEffect(() => {
@@ -41,11 +47,9 @@ export default function DashboardClient() {
     async function load() {
       setLoading(true);
       setError(null);
-      setFocusZone(null);
-      setSelectedZone(null);
 
       try {
-        const riskData = await loadRiskSnapshot(coords.lat, coords.lon, 400);
+        const riskData = await loadRiskSnapshot(coords.lat, coords.lon, 250);
 
         if (cancelled) return;
 
@@ -137,7 +141,35 @@ export default function DashboardClient() {
 
       <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div className="rounded-3xl border border-white/10 bg-black/25 p-3 shadow-2xl shadow-cyan-950/30">
-          <RiskMap zones={zones} center={mapCenter} zoom={mapZoom} autoFitBounds={!focusZone} />
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setMapMode("globe")}
+              className={`text-xs px-2 py-1 rounded transition ${
+                mapMode === "globe"
+                  ? "bg-cyan-400/20 border border-cyan-300/70 text-cyan-100"
+                  : "border border-white/15 text-slate-300 hover:border-white/30"
+              }`}
+            >
+              🌍 Globe
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapMode("flat")}
+              className={`text-xs px-2 py-1 rounded transition ${
+                mapMode === "flat"
+                  ? "bg-cyan-400/20 border border-cyan-300/70 text-cyan-100"
+                  : "border border-white/15 text-slate-300 hover:border-white/30"
+              }`}
+            >
+              🗺️ Flat
+            </button>
+          </div>
+          {mapMode === "globe" ? (
+            <GlobeMap zones={zones} autoRotate={!focusZone} />
+          ) : (
+            <RiskMap zones={zones} center={mapCenter} zoom={mapZoom} autoFitBounds={!focusZone} />
+          )}
         </div>
 
         <aside className="space-y-4">
@@ -251,13 +283,13 @@ export default function DashboardClient() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <p className="text-sm font-medium text-white">Zone Risk Table</p>
+        <p className="text-sm font-medium text-white">City-wise Risk Stats</p>
         {loading && <p className="mt-2 text-sm text-slate-300">Refreshing predictions...</p>}
         {error && <p className="mt-2 text-sm text-red-300">{error}</p>}
         <div className="mt-3 overflow-x-auto">
           <div className="mb-4 grid gap-3 md:grid-cols-[1.5fr_0.7fr_0.6fr]">
             <label className="flex flex-col gap-1 text-xs text-slate-300">
-              Search zone or country
+              Search city or country
               <input
                 value={zoneQuery}
                 onChange={(event) => {

@@ -13,9 +13,9 @@ It combines open weather signals, a transparent scoring engine, and map-based ri
 ## What I Built
 
 - A Next.js 16 + TypeScript application with App Router
-- Risk scoring API using deterministic, explainable formulas
+- Deterministic risk scoring engine using transparent formulas
 - Leaflet risk map with zone overlays and color-coded severity
-- Alert pipeline that writes high-risk events to local persistence
+- Client-side alert generation for high-risk events
 - Global zone seeding that includes country capitals and major cities worldwide
 
 ## Why This Project Exists
@@ -35,6 +35,7 @@ Climate risk is becoming a planning problem, not only a research topic. I built 
 ```bash
 npm install
 npm run seed
+npm test
 npm run dev
 ```
 
@@ -62,14 +63,21 @@ Available keys:
 
 ## API Surface
 
+- Static-export mode is enabled, so no server API routes are used at runtime.
 - The dashboard computes risk data in the browser and fetches weather directly from Open-Meteo.
 - Alert cards are generated client-side and are not persisted on static hosting.
+
+## Tests
+
+- Risk utility tests run with Node's built-in test runner through tsx.
+- Run: `npm test`
 
 ## Global Coverage Data
 
 - Capitals are fetched for all countries from Rest Countries v3.
 - Major cities are generated from the all-the-cities dataset.
-- Current major-city cutoff is population >= 500,000.
+- Current major-city cutoff is population >= 500,000 globally.
+- For USA, Canada, Australia, and Europe, an expanded cutoff of population >= 150,000 is used to include more major cities.
 - All cities above the major-city cutoff are included, alongside country capitals.
 
 ## Scoring Logic (Current Baseline)
