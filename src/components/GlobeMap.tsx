@@ -97,7 +97,8 @@ export default function GlobeMap({ zones, autoRotate = true }: GlobeMapProps) {
   const animationIdRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     // Scene setup
     const scene = new THREE.Scene();
@@ -105,8 +106,8 @@ export default function GlobeMap({ zones, autoRotate = true }: GlobeMapProps) {
     scene.background = new THREE.Color(0x0f172a);
 
     // Camera setup
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
     const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
     camera.position.z = 2.5;
 
@@ -114,7 +115,7 @@ export default function GlobeMap({ zones, autoRotate = true }: GlobeMapProps) {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
-    containerRef.current.appendChild(renderer.domElement);
+    container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     // Create globe
@@ -207,8 +208,8 @@ export default function GlobeMap({ zones, autoRotate = true }: GlobeMapProps) {
 
     // Handle window resize
     const handleResize = () => {
-      const newWidth = containerRef.current?.clientWidth || width;
-      const newHeight = containerRef.current?.clientHeight || height;
+      const newWidth = container.clientWidth || width;
+      const newHeight = container.clientHeight || height;
       camera.aspect = newWidth / newHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(newWidth, newHeight);
@@ -256,7 +257,7 @@ export default function GlobeMap({ zones, autoRotate = true }: GlobeMapProps) {
         cancelAnimationFrame(animationIdRef.current);
       }
       renderer.dispose();
-      containerRef.current?.removeChild(renderer.domElement);
+      container.removeChild(renderer.domElement);
     };
   }, [zones, autoRotate]);
 
