@@ -256,23 +256,30 @@ const createAlertRecord = (zone: ZoneRisk, riskType: AlertType, message: string)
 });
 
 const buildAlerts = (zones: ZoneRisk[]): AlertRecord[] => {
-  return zones.flatMap((zone) => {
-    const records: AlertRecord[] = [];
+  const records = zones.flatMap((zone) => {
+    const zoneRecords: AlertRecord[] = [];
 
     if (zone.risks.flood >= threshold.flood) {
-      records.push(createAlertRecord(zone, "flood", `Flood risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "flood", `Flood risk elevated in ${zone.name}.`));
     }
 
     if (zone.risks.heatwave >= threshold.heatwave) {
-      records.push(createAlertRecord(zone, "heatwave", `Heatwave risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "heatwave", `Heatwave risk elevated in ${zone.name}.`));
     }
 
     if (zone.risks.airQuality >= threshold.airQuality) {
-      records.push(createAlertRecord(zone, "airQuality", `Air quality risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "airQuality", `Air quality risk elevated in ${zone.name}.`));
     }
 
-    return records;
+    return zoneRecords;
   });
+
+  records.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
+  return records;
 };
 
 export interface RiskSnapshot extends RiskApiResponse {
