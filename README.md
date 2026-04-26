@@ -30,6 +30,12 @@ Climate risk is becoming a planning problem, not only a research topic. I built 
 - Leaflet + react-leaflet
 - Open-Meteo (current weather data)
 
+## Data Sources
+
+- Open-Meteo forecast API for temperature, precipitation, humidity, wind, and precipitation probability
+- Open-Meteo air-quality API for PM2.5 (`pm2_5`) when available
+- Deterministic PM2.5 fallback estimate if air-quality feed is temporarily unavailable
+
 ## Local Run
 
 ```bash
@@ -84,15 +90,14 @@ Available keys:
 
 - Flood score: precipitation, rain probability, humidity
 - Heat score: temperature, humidity, wind
-- Air score: PM2.5 proxy, wind
+- Air score: PM2.5 concentration, wind
 - Overall score: weighted mix (flood 35%, heat 40%, air 25%)
 
 This version is intentionally explainable. It is designed so I can later swap deterministic formulas with trained models while keeping the same API contract.
 
 ## Next Up
 
-1. Replace PM2.5 proxy with real pollutant feeds.
-2. Add historical climate training data and feature pipelines.
-3. Introduce geospatial indexing for dense grid inference.
-4. Add user-specific alert delivery (email/SMS/webhook).
-5. Add model monitoring and concept drift detection.
+1. Add historical climate training data and feature pipelines.
+2. Introduce geospatial indexing for dense grid inference.
+3. Add user-specific alert delivery (email/SMS/webhook).
+4. Add model monitoring and concept drift detection.
