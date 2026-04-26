@@ -3,10 +3,23 @@ import { computeRiskBreakdown, overallScoreFromBreakdown, rationaleFromBreakdown
 import { getWeatherSnapshot } from "@/lib/weather";
 import { distanceKm, getSeedZones, selectRelevantZones, type PrioritizedZone, type SeedZone } from "@/lib/zones";
 
-const threshold = {
+const DEFAULT_THRESHOLDS = {
   flood: 0.7,
   heatwave: 0.7,
   airQuality: 0.7,
+};
+
+const parseThreshold = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  if (parsed < 0 || parsed > 1) return fallback;
+  return parsed;
+};
+
+const threshold = {
+  flood: parseThreshold(process.env.NEXT_PUBLIC_ALERT_FLOOD_THRESHOLD, DEFAULT_THRESHOLDS.flood),
+  heatwave: parseThreshold(process.env.NEXT_PUBLIC_ALERT_HEAT_THRESHOLD, DEFAULT_THRESHOLDS.heatwave),
+  airQuality: parseThreshold(process.env.NEXT_PUBLIC_ALERT_AIR_THRESHOLD, DEFAULT_THRESHOLDS.airQuality),
 };
 
 type ScorableZone = Pick<PrioritizedZone, "id" | "name" | "lat" | "lon" | "radiusKm" | "countryCode" | "populationEstimate" | "zoneKind">;
