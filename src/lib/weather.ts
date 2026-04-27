@@ -10,12 +10,28 @@ const toNumber = (value: unknown, fallback: number): number => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+const clamp = (value: number, min: number, max: number): number => {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
+};
+
+const normalizeLat = (lat: number): number => clamp(lat, -90, 90);
+const normalizeLon = (lon: number): number => {
+  if (!Number.isFinite(lon)) return 0;
+  const wrapped = ((lon + 180) % 360 + 360) % 360 - 180;
+  return wrapped === -180 ? 180 : wrapped;
+};
+
+const normalizeCacheKey = (lat: number, lon: number): string => `${lat.toFixed(2)},${lon.toFixed(2)}`;
+
 const estimatePm25 = (temperature2m: number): number => {
   return Math.max(8, Math.min(140, 14 + temperature2m * 0.8));
 };
 
 export async function getWeatherSnapshot(lat: number, lon: number): Promise<WeatherSnapshot> {
-  const cacheKey = `${Math.round(lat * 10)},${Math.round(lon * 10)}`;
+  const normalizedLat = normalizeLat(lat);
+  const normalizedLon = normalizeLon(lon);
+  const cacheKey = normalizeCacheKey(normalizedLat, normalizedLon);
   const cached = weatherCache.get(cacheKey);
   
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION_MS) {
@@ -23,8 +39,8 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
   }
 
   const query = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lon),
+    latitude: String(normalizedLat),
+    longitude: String(normalizedLon),
     current: "temperature_2m,precipitation,relative_humidity_2m,wind_speed_10m",
     hourly: "precipitation_probability",
     timezone: "auto",
@@ -32,8 +48,8 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
   });
 
   const airQuery = new URLSearchParams({
-    latitude: String(lat),
-    longitude: String(lon),
+    latitude: String(normalizedLat),
+    longitude: String(normalizedLon),
     current: "pm2_5",
     timezone: "auto",
   });
