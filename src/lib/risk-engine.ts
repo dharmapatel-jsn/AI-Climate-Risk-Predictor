@@ -222,11 +222,12 @@ const REGION_COUNTRY_CODES: Record<RegionHighlight["label"], string[]> = {
 const scoreZone = async (zone: ScorableZone, locationBoost = 0): Promise<ZoneRisk> => {
   const weather = await getWeatherSnapshot(zone.lat, zone.lon);
   const base = computeRiskBreakdown(weather);
+  const safeBoost = clamp(locationBoost, 0, 0.25);
 
   const risks = {
-    flood: Math.min(1, base.flood + locationBoost),
-    heatwave: Math.min(1, base.heatwave + locationBoost * 0.8),
-    airQuality: Math.min(1, base.airQuality + locationBoost * 0.5),
+    flood: Math.min(1, base.flood + safeBoost),
+    heatwave: Math.min(1, base.heatwave + safeBoost * 0.8),
+    airQuality: Math.min(1, base.airQuality + safeBoost * 0.5),
   };
 
   const overallScore = overallScoreFromBreakdown(risks);
