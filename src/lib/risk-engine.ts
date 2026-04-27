@@ -22,6 +22,18 @@ const parseThreshold = (value: string | undefined, fallback: number): number => 
   return parsed;
 };
 
+const normalizeLat = (value: number): number => clamp(value, -90, 90);
+const normalizeLon = (value: number): number => {
+  if (!Number.isFinite(value)) return 0;
+  const wrapped = ((value + 180) % 360 + 360) % 360 - 180;
+  return wrapped === -180 ? 180 : wrapped;
+};
+
+const normalizeMaxZones = (value: number): number => {
+  if (!Number.isFinite(value)) return 220;
+  return Math.floor(clamp(value, 50, 1000));
+};
+
 const threshold = {
   flood: parseThreshold(process.env.NEXT_PUBLIC_ALERT_FLOOD_THRESHOLD, DEFAULT_THRESHOLDS.flood),
   heatwave: parseThreshold(process.env.NEXT_PUBLIC_ALERT_HEAT_THRESHOLD, DEFAULT_THRESHOLDS.heatwave),
@@ -293,10 +305,14 @@ export interface RiskSnapshot extends RiskApiResponse {
 }
 
 export async function loadRiskSnapshot(lat: number, lon: number, maxZones = 400): Promise<RiskSnapshot> {
+  const normalizedLat = normalizeLat(lat);
+  const normalizedLon = normalizeLon(lon);
+  const normalizedMaxZones = normalizeMaxZones(maxZones);
+
   const seedZones = await getSeedZones();
-  const prioritizedZones = selectRelevantZones(seedZones, lat, lon, maxZones);
-  const countryCoveredZones = ensureCountryCoverage(seedZones, prioritizedZones, lat, lon);
-  const selectedZones = ensureTargetRegionCoverage(seedZones, countryCoveredZones, lat, lon);
+  const prioritizedZones = selectRelevantZones(seedZones, normalizedLat, normalizedLon, normalizedMaxZones);
+  const countryCoveredZones = ensureCountryCoverage(seedZones, prioritizedZones, normalizedLat, normalizedLon);
+  const selectedZones = ensureTargetRegionCoverage(seedZones, countryCoveredZones, normalizedLat, normalizedLon);
 
   const [zones, featuredRegions] = await Promise.all([
     Promise.all(
@@ -311,7 +327,7 @@ export async function loadRiskSnapshot(lat: number, lon: number, maxZones = 400)
   const sortedZones = zones.sort((a, b) => b.overallScore - a.overallScore);
 
   return {
-    queriedLocation: { lat, lon },
+    queriedLocation: { lat: normalizedLat, lon: normalizedLon },
     generatedAt: new Date().toISOString(),
     zones: sortedZones,
     featuredRegions,
