@@ -101,3 +101,16 @@ This version is intentionally explainable. It is designed so I can later swap de
 2. Introduce geospatial indexing for dense grid inference.
 3. Add user-specific alert delivery (email/SMS/webhook).
 4. Add model monitoring and concept drift detection.
+
+## Contribution Log (2026-04-27)
+
+1. Normalized input latitude in risk snapshot generation.
+2. Normalized input longitude in risk snapshot generation.
+3. Added max-zone guardrails to keep zone selection bounded.
+4. Added location boost clamping to avoid runaway score inflation.
+5. Switched alert IDs to deterministic generation tied to snapshot timestamp.
+6. Improved alert sorting with deterministic tie-breakers.
+7. Improved zone sorting with stable tie-breakers.
+8. Normalized weather query coordinates before Open-Meteo requests.
+9. Added weather cache size cap and eviction.
+10. Expanded risk utility tests for threshold boundaries and clamping behavior.
