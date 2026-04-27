@@ -295,7 +295,9 @@ const buildAlerts = (zones: ZoneRisk[], generatedAt: string): AlertRecord[] => {
 
   records.sort((a, b) => {
     if (b.score !== a.score) return b.score - a.score;
-    return b.createdAt.localeCompare(a.createdAt);
+    const zoneCompare = a.zoneName.localeCompare(b.zoneName);
+    if (zoneCompare !== 0) return zoneCompare;
+    return a.riskType.localeCompare(b.riskType);
   });
 
   return records;
@@ -326,7 +328,11 @@ export async function loadRiskSnapshot(lat: number, lon: number, maxZones = 400)
     buildRegionHighlights(seedZones),
   ]);
 
-  const sortedZones = zones.sort((a, b) => b.overallScore - a.overallScore);
+  const sortedZones = zones.sort((a, b) => {
+    if (b.overallScore !== a.overallScore) return b.overallScore - a.overallScore;
+    if (b.populationEstimate !== a.populationEstimate) return b.populationEstimate - a.populationEstimate;
+    return a.name.localeCompare(b.name);
+  });
 
   return {
     queriedLocation: { lat: normalizedLat, lon: normalizedLon },
