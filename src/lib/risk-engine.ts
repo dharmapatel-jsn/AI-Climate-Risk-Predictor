@@ -9,7 +9,13 @@ const DEFAULT_THRESHOLDS = {
   airQuality: 0.7,
 };
 
+const clamp = (value: number, min: number, max: number): number => {
+  if (!Number.isFinite(value)) return min;
+  return Math.max(min, Math.min(max, value));
+};
+
 const parseThreshold = (value: string | undefined, fallback: number): number => {
+  if (!value) return fallback;
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
   if (parsed < 0 || parsed > 1) return fallback;
