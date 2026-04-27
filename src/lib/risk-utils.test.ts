@@ -10,8 +10,11 @@ import {
 
 test("risk level thresholds map correctly", () => {
   assert.equal(riskLevelFromScore(0.2), "low");
+  assert.equal(riskLevelFromScore(0.3999), "low");
   assert.equal(riskLevelFromScore(0.4), "moderate");
+  assert.equal(riskLevelFromScore(0.6499), "moderate");
   assert.equal(riskLevelFromScore(0.65), "high");
+  assert.equal(riskLevelFromScore(0.8499), "high");
   assert.equal(riskLevelFromScore(0.85), "extreme");
 });
 
