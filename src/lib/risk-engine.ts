@@ -264,9 +264,9 @@ const buildRegionHighlights = async (seedZones: ScorableZone[]): Promise<RegionH
   return highlights.filter((highlight): highlight is RegionHighlight => Boolean(highlight));
 };
 
-const createAlertRecord = (zone: ZoneRisk, riskType: AlertType, message: string): AlertRecord => ({
-  id: `${zone.id}-${riskType}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-  createdAt: new Date().toISOString(),
+const createAlertRecord = (zone: ZoneRisk, riskType: AlertType, message: string, generatedAt: string): AlertRecord => ({
+  id: `${zone.id}-${riskType}-${generatedAt}`,
+  createdAt: generatedAt,
   zoneId: zone.id,
   zoneName: zone.name,
   riskType,
@@ -274,20 +274,20 @@ const createAlertRecord = (zone: ZoneRisk, riskType: AlertType, message: string)
   message,
 });
 
-const buildAlerts = (zones: ZoneRisk[]): AlertRecord[] => {
+const buildAlerts = (zones: ZoneRisk[], generatedAt: string): AlertRecord[] => {
   const records = zones.flatMap((zone) => {
     const zoneRecords: AlertRecord[] = [];
 
     if (zone.risks.flood >= threshold.flood) {
-      zoneRecords.push(createAlertRecord(zone, "flood", `Flood risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "flood", `Flood risk elevated in ${zone.name}.`, generatedAt));
     }
 
     if (zone.risks.heatwave >= threshold.heatwave) {
-      zoneRecords.push(createAlertRecord(zone, "heatwave", `Heatwave risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "heatwave", `Heatwave risk elevated in ${zone.name}.`, generatedAt));
     }
 
     if (zone.risks.airQuality >= threshold.airQuality) {
-      zoneRecords.push(createAlertRecord(zone, "airQuality", `Air quality risk elevated in ${zone.name}.`));
+      zoneRecords.push(createAlertRecord(zone, "airQuality", `Air quality risk elevated in ${zone.name}.`, generatedAt));
     }
 
     return zoneRecords;
@@ -309,6 +309,7 @@ export async function loadRiskSnapshot(lat: number, lon: number, maxZones = 400)
   const normalizedLat = normalizeLat(lat);
   const normalizedLon = normalizeLon(lon);
   const normalizedMaxZones = normalizeMaxZones(maxZones);
+  const generatedAt = new Date().toISOString();
 
   const seedZones = await getSeedZones();
   const prioritizedZones = selectRelevantZones(seedZones, normalizedLat, normalizedLon, normalizedMaxZones);
@@ -329,9 +330,9 @@ export async function loadRiskSnapshot(lat: number, lon: number, maxZones = 400)
 
   return {
     queriedLocation: { lat: normalizedLat, lon: normalizedLon },
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     zones: sortedZones,
     featuredRegions,
-    alerts: buildAlerts(sortedZones),
+    alerts: buildAlerts(sortedZones, generatedAt),
   };
 }
