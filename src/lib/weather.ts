@@ -3,6 +3,7 @@ import { WeatherSnapshot } from "@/types/climate";
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
 const OPEN_METEO_AIR_URL = "https://air-quality-api.open-meteo.com/v1/air-quality";
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minute cache
+const MAX_CACHE_ENTRIES = 800;
 const weatherCache = new Map<string, { data: WeatherSnapshot; timestamp: number }>();
 
 const toNumber = (value: unknown, fallback: number): number => {
@@ -23,6 +24,12 @@ const normalizeLon = (lon: number): number => {
 };
 
 const normalizeCacheKey = (lat: number, lon: number): string => `${lat.toFixed(2)},${lon.toFixed(2)}`;
+
+const enforceCacheLimit = (): void => {
+  if (weatherCache.size <= MAX_CACHE_ENTRIES) return;
+  const oldest = weatherCache.keys().next().value;
+  if (oldest) weatherCache.delete(oldest);
+};
 
 const estimatePm25 = (temperature2m: number): number => {
   return Math.max(8, Math.min(140, 14 + temperature2m * 0.8));
@@ -70,9 +77,10 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
     const data = await weatherResponse.json();
     const current = data?.current ?? {};
     const hourly = data?.hourly ?? {};
-    const precipitationProbability = Array.isArray(hourly?.precipitation_probability)
+    const rawPrecipitationProbability = Array.isArray(hourly?.precipitation_probability)
       ? toNumber(hourly.precipitation_probability[0], 20)
       : 20;
+    const precipitationProbability = clamp(rawPrecipitationProbability, 0, 100);
 
     const temperature2m = toNumber(current.temperature_2m, 29);
     const observedPm25 = toNumber(airPayload?.current?.pm2_5, Number.NaN);
@@ -82,14 +90,15 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
 
     const snapshot: WeatherSnapshot = {
       temperature2m,
-      precipitation: toNumber(current.precipitation, 1.5),
+      precipitation: Math.max(0, toNumber(current.precipitation, 1.5)),
       precipitationProbability,
-      windSpeed10m: toNumber(current.wind_speed_10m, 4),
-      humidity: toNumber(current.relative_humidity_2m, 58),
+      windSpeed10m: Math.max(0, toNumber(current.wind_speed_10m, 4)),
+      humidity: clamp(toNumber(current.relative_humidity_2m, 58), 0, 100),
       pm25Estimate,
     };
 
     weatherCache.set(cacheKey, { data: snapshot, timestamp: Date.now() });
+    enforceCacheLimit();
     return snapshot;
   } catch {
     const fallback: WeatherSnapshot = {
@@ -101,6 +110,7 @@ export async function getWeatherSnapshot(lat: number, lon: number): Promise<Weat
       pm25Estimate: 24,
     };
     weatherCache.set(cacheKey, { data: fallback, timestamp: Date.now() });
+    enforceCacheLimit();
     return fallback;
   }
 }
