@@ -60,6 +60,23 @@ test("overall score uses expected weighting", () => {
   assert.equal(overall, 0.62);
 });
 
+test("overall score is clamped when breakdown values are out of bounds", () => {
+  const high = overallScoreFromBreakdown({
+    flood: 2,
+    heatwave: 2,
+    airQuality: 2,
+  });
+
+  const low = overallScoreFromBreakdown({
+    flood: -1,
+    heatwave: -0.2,
+    airQuality: -8,
+  });
+
+  assert.equal(high, 1);
+  assert.equal(low, 0);
+});
+
 test("rationale includes category-specific notes and low-risk fallback", () => {
   const severeNotes = rationaleFromBreakdown({
     flood: 0.8,
@@ -78,4 +95,19 @@ test("rationale includes category-specific notes and low-risk fallback", () => {
   });
 
   assert.deepEqual(fallbackNotes, ["Current conditions indicate manageable risk levels."]);
+});
+
+test("risk breakdown remains bounded for unrealistic weather values", () => {
+  const extreme = computeRiskBreakdown({
+    temperature2m: 120,
+    precipitation: 500,
+    precipitationProbability: 200,
+    windSpeed10m: -10,
+    humidity: 250,
+    pm25Estimate: -50,
+  });
+
+  assert.ok(extreme.flood >= 0 && extreme.flood <= 1);
+  assert.ok(extreme.heatwave >= 0 && extreme.heatwave <= 1);
+  assert.ok(extreme.airQuality >= 0 && extreme.airQuality <= 1);
 });
