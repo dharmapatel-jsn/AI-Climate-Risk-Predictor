@@ -4,9 +4,18 @@ import assert from "node:assert/strict";
 import {
   computeRiskBreakdown,
   overallScoreFromBreakdown,
+  RISK_LEVEL_THRESHOLDS,
   rationaleFromBreakdown,
   riskLevelFromScore,
 } from "./risk-utils";
+
+test("risk thresholds are exported with expected defaults", () => {
+  assert.deepEqual(RISK_LEVEL_THRESHOLDS, {
+    moderate: 0.4,
+    high: 0.65,
+    extreme: 0.85,
+  });
+});
 
 test("risk level thresholds map correctly", () => {
   assert.equal(riskLevelFromScore(0.2), "low");
