@@ -43,3 +43,33 @@ test("selectRelevantZones does not exceed source length", () => {
   const selected = selectRelevantZones(zones, 0, 0, 500);
   assert.equal(selected.length, 30);
 });
+
+test("selectRelevantZones falls back when maxZones is non-finite", () => {
+  const zones: SeedZone[] = Array.from({ length: 300 }, (_, i) => ({
+    id: `nf-${i}`,
+    name: `NonFinite ${i}`,
+    lat: i * 0.001,
+    lon: i * 0.001,
+    radiusKm: 5,
+    countryCode: "ZZ",
+    populationEstimate: 1000 + i,
+  }));
+
+  const selected = selectRelevantZones(zones, 0, 0, Number.NaN);
+  assert.equal(selected.length, 220);
+});
+
+test("selectRelevantZones truncates fractional maxZones", () => {
+  const zones: SeedZone[] = Array.from({ length: 100 }, (_, i) => ({
+    id: `f-${i}`,
+    name: `Fractional ${i}`,
+    lat: i * 0.01,
+    lon: i * 0.02,
+    radiusKm: 6,
+    countryCode: "WW",
+    populationEstimate: 5000 + i,
+  }));
+
+  const selected = selectRelevantZones(zones, 0, 0, 60.9);
+  assert.equal(selected.length, 60);
+});
