@@ -106,6 +106,16 @@ test("rationale includes category-specific notes and low-risk fallback", () => {
   assert.deepEqual(fallbackNotes, ["Current conditions indicate manageable risk levels."]);
 });
 
+test("rationale includes note when score is exactly threshold", () => {
+  const notes = rationaleFromBreakdown({
+    flood: 0.65,
+    heatwave: 0.1,
+    airQuality: 0.2,
+  });
+
+  assert.ok(notes.some((line) => line.includes("flood exposure")));
+});
+
 test("risk breakdown remains bounded for unrealistic weather values", () => {
   const extreme = computeRiskBreakdown({
     temperature2m: 120,
