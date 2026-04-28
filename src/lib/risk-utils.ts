@@ -2,15 +2,21 @@ import { RiskBreakdown, RiskLevel, WeatherSnapshot } from "@/types/climate";
 
 const clamp = (value: number, min = 0, max = 1): number => Math.max(min, Math.min(max, value));
 
+export const RISK_LEVEL_THRESHOLDS = {
+  moderate: 0.4,
+  high: 0.65,
+  extreme: 0.85,
+} as const;
+
 const scale = (value: number, min: number, max: number): number => {
   if (max <= min) return 0;
   return clamp((value - min) / (max - min));
 };
 
 export const riskLevelFromScore = (score: number): RiskLevel => {
-  if (score >= 0.85) return "extreme";
-  if (score >= 0.65) return "high";
-  if (score >= 0.4) return "moderate";
+  if (score >= RISK_LEVEL_THRESHOLDS.extreme) return "extreme";
+  if (score >= RISK_LEVEL_THRESHOLDS.high) return "high";
+  if (score >= RISK_LEVEL_THRESHOLDS.moderate) return "moderate";
   return "low";
 };
 
