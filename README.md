@@ -114,3 +114,16 @@ This version is intentionally explainable. It is designed so I can later swap de
 8. Normalized weather query coordinates before Open-Meteo requests.
 9. Added weather cache size cap and eviction.
 10. Expanded risk utility tests for threshold boundaries and clamping behavior.
+
+## Contribution Log (2026-04-28)
+
+1. Updated test command to run all `src/lib` test files.
+2. Added zone utility tests for distance symmetry and selection bounds.
+3. Hardened zone selection against non-finite and fractional `maxZones` values.
+4. Added test coverage for zone `maxZones` sanitization paths.
+5. Extracted risk-level thresholds into exported constants.
+6. Added tests verifying exported risk threshold defaults.
+7. Canonicalized weather cache keys to avoid negative-zero key divergence.
+8. Added rationale threshold edge-case test at exact alert cutoff.
+9. Added test asserting closer zones are prioritized when populations match.
+10. Recorded this contribution set in project documentation.
