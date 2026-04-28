@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "seed": "node scripts/seed.mjs",
-    "test": "tsx --test src/lib/risk-utils.test.ts"
+    "test": "tsx --test src/lib/**/*.test.ts"
   },
   "keywords": [],
   "author": "WinTen",
