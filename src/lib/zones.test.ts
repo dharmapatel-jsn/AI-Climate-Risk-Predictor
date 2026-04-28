@@ -73,3 +73,29 @@ test("selectRelevantZones truncates fractional maxZones", () => {
   const selected = selectRelevantZones(zones, 0, 0, 60.9);
   assert.equal(selected.length, 60);
 });
+
+test("selectRelevantZones prefers closer zones when population is equal", () => {
+  const zones: SeedZone[] = [
+    {
+      id: "near",
+      name: "Near",
+      lat: 0.1,
+      lon: 0.1,
+      radiusKm: 5,
+      countryCode: "AA",
+      populationEstimate: 1_000_000,
+    },
+    {
+      id: "far",
+      name: "Far",
+      lat: 45,
+      lon: 45,
+      radiusKm: 5,
+      countryCode: "AA",
+      populationEstimate: 1_000_000,
+    },
+  ];
+
+  const selected = selectRelevantZones(zones, 0, 0, 100);
+  assert.equal(selected[0]?.id, "near");
+});
