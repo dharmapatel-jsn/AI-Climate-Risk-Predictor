@@ -23,7 +23,12 @@ const normalizeLon = (lon: number): number => {
   return wrapped === -180 ? 180 : wrapped;
 };
 
-const normalizeCacheKey = (lat: number, lon: number): string => `${lat.toFixed(2)},${lon.toFixed(2)}`;
+const canonicalZero = (value: number): number => (Object.is(value, -0) ? 0 : value);
+const normalizeCacheKey = (lat: number, lon: number): string => {
+  const normalizedLat = canonicalZero(lat);
+  const normalizedLon = canonicalZero(lon);
+  return `${normalizedLat.toFixed(2)},${normalizedLon.toFixed(2)}`;
+};
 
 const enforceCacheLimit = (): void => {
   if (weatherCache.size <= MAX_CACHE_ENTRIES) return;
