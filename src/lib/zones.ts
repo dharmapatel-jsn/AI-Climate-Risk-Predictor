@@ -38,6 +38,8 @@ export function selectRelevantZones(
   targetLon: number,
   maxZones = 220,
 ): PrioritizedZone[] {
+  const normalizedMaxZones = Number.isFinite(maxZones) ? Math.trunc(maxZones) : 220;
+
   const withDistance = zones.map((zone) => ({
     ...zone,
     distanceKm: distanceKm(targetLat, targetLon, zone.lat, zone.lon),
@@ -57,5 +59,6 @@ export function selectRelevantZones(
     return aScore - bScore;
   });
 
-  return withDistance.slice(0, Math.max(50, Math.min(maxZones, zones.length)));
+  const targetCount = Math.max(50, Math.min(Math.max(1, normalizedMaxZones), zones.length));
+  return withDistance.slice(0, targetCount);
 }
